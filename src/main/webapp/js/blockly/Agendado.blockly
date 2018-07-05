@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><blockly formTarget="" resourceType="JS" ruleDescription="Agendado" ruleName="Agendado" ruleSynchronous="false" ruleTimeout="" ruleType="I">
+  <metadata scale="1" scrollx="356.00000000000045" scrolly="0.9999999999998863" target="Anb:u5+^,0vLkL9QIqn5"/>
+  <block colour="#995ba5" id="B0RZ]mNoA*OKK0^m;of5" origintype="procedures_defnoreturn" output="false" tooltip="Cria uma função que não tem retorno." type="procedures_defnoreturn" x="-277" y="68">
+    <field name="NAME">faça algo</field>
+    <comment h="80" pinned="false" w="160">Descreva esta função...</comment>
+    <statement name="STACK">
+      <block colour="#934848" dependencyby="B0RZ]mNoA*OKK0^m;of5" id="kF}`cN6zlyFg9h]p}z[{" multilayer="true" namespace="cronapi.screen.notify" origintype="notify_type" output="false" returntype="ObjectType.VOID" tooltip="%3Cdiv%20class=%22name%22%3E%3Cstrong%3ENome:%3C/strong%3E%3Cdiv%3EExibe%20notifica%C3%A7%C3%A3o%3C/div%3E%3C/div%3E%3Cdiv%20class=%22description%22%3E%3Cstrong%3EDescri%C3%A7%C3%A3o:%3C/strong%3E%3Cdiv%3EFun%C3%A7%C3%A3o%20que%20exibe%20notifica%C3%A7%C3%A3o%3C/div%3E%3C/div%3E%3Cdiv%20class=%22params%22%3E%3Cstrong%3EParam%C3%AAtro:%3C/strong%3E%3Cdiv%3E%3Cspan%3E%20-%20Tipo%20da%20notifica%C3%A7%C3%A3o%20:%20Texto%3C/span%3E%3Cdiv%3E%20pode%20ser%20success,%20error,%20warning,%20info%20ou%20primary%3C/div%3E%3Cspan%3E%20-%20Mensagem%20:%20Texto%3C/span%3E%3Cdiv%3E%20Mensagem%20ou%20conte%C3%BAdo%20html%20a%20ser%20exibido%3C/div%3E%3C/div%3E%3C/div%3E%3Cdiv%20class=%22link%22%3E%3Cstrong%3EAjuda:%3C/strong%3E%3Cdiv%20class=%22tooltip-link%22%3E%3Ca%20target=%22_blank%22%20href=%22https://docs.cronapp.io/display/CRON2/cronapi.screen.notify%22%3Ehttps://docs.cronapp.io/display/CRON2/cronapi.screen.notify%3C/a%3E%3C/div%3E%3C/div%3E" type="notify_type">
+        <mutation name="{{cronapi.screen.notify}}" value="[object Object]"/>
+        <field name="SELECT">success</field>
+        <value name="MESSAGE">
+          <shadow colour="#5ba593" dependencyby="B0RZ]mNoA*OKK0^m;of5" id="b.9^f(t:j9jD1!Ev+N]i" origintype="text" output="true" tooltip="function () { [native code] }" type="text">
+            <field name="TEXT">eds</field>
+          </shadow>
+        </value>
+        <next>
+          <block colour="#5ba58c" dependencyby="B0RZ]mNoA*OKK0^m;of5" id="WJ%7EA*-75h5E}Zo|#:k" origintype="text_print" output="false" tooltip="Imprime o texto, número ou valor especificado." type="text_print">
+            <value name="TEXT">
+              <shadow colour="#5ba593" dependencyby="B0RZ]mNoA*OKK0^m;of5" id="XY%UPelO)F`/w#WYqkzN" origintype="text" output="true" tooltip="function () { [native code] }" type="text">
+                <field name="TEXT">testando cliente</field>
+              </shadow>
+            </value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block colour="#995ba5" id="Anb:u5+^,0vLkL9QIqn5" origintype="procedures_defreturn" output="false" tooltip="Cria uma função que possui um valor de retorno." type="procedures_defreturn" x="-292" y="83">
+    <field name="NAME">Executar</field>
+    <comment h="80" pinned="false" w="160">Agendado</comment>
+    <statement name="STACK">
+      <block colour="#487f7f" dependencyby="Anb:u5+^,0vLkL9QIqn5" id="AZx}I-a2+.[P|`vs|.,e" multilayer="false" namespace="cronapi.util.scheduleExecution" origintype="procedures_callnoreturn" output="false" returntype="ObjectType.VOID" tooltip="%3Cdiv%20class=%22name%22%3E%3Cstrong%3ENome:%3C/strong%3E%3Cdiv%3EAgendar%20execu%C3%A7%C3%A3o%3C/div%3E%3C/div%3E%3Cdiv%20class=%22description%22%3E%3Cstrong%3EDescri%C3%A7%C3%A3o:%3C/strong%3E%3Cdiv%3EFun%C3%A7%C3%A3o%20que%20agenda%20comandos%20a%20serem%20executados%20ap%C3%B3s%20um%20determinado%20atraso%20ou%20de%20forma%20peri%C3%B3dica.%3C/div%3E%3C/div%3E%3Cdiv%20class=%22params%22%3E%3Cstrong%3EParam%C3%AAtro:%3C/strong%3E%3Cdiv%3E%3Cspan%3E%20-%20Comandos%20:%20Comandos%3C/span%3E%3Cdiv%3E%20Comandos%20a%20serem%20executados%3C/div%3E%3Cspan%3E%20-%20Tempo%20inicial%20:%20Inteiro%3C/span%3E%3Cdiv%3E%20Tempo%20inicial%20necess%C3%A1rio%20at%C3%A9%20que%20a%20fun%C3%A7%C3%A3o%20execute%20pela%20primeira%20o(s)%20comando(s)%20definido(s)%3C/div%3E%3Cspan%3E%20-%20Tempo%20para%20Atualiza%C3%A7%C3%A3o%20:%20Inteiro%3C/span%3E%3Cdiv%3E%20Tempo%20de%20espera%20entre%20as%20execu%C3%A7%C3%B5es%20do(s)%20comandos(s)%3C/div%3E%3Cspan%3E%20-%20Unidade%20de%20Tempo%20:%20Texto%3C/span%3E%3Cdiv%3E%20Unidade%20de%20medida%20do%20tempo%20passado%20como%20par%C3%A2metro%3C/div%3E%3C/div%3E%3C/div%3E%3Cdiv%20class=%22link%22%3E%3Cstrong%3EAjuda:%3C/strong%3E%3Cdiv%20class=%22tooltip-link%22%3E%3Ca%20target=%22_blank%22%20href=%22https://docs.cronapp.io/display/CRON2/cronapi.util.scheduleExecution%22%3Ehttps://docs.cronapp.io/display/CRON2/cronapi.util.scheduleExecution%3C/a%3E%3C/div%3E%3C/div%3E" type="procedures_callnoreturn">
+        <mutation name="{{cronapi.util.scheduleExecution}}" return-raw-type="undefined">
+          <arg cronapi-raw-type="undefined" cronapi-type="ObjectType.STATEMENT" name="Comandos"/>
+          <arg cronapi-raw-type="undefined" cronapi-type="ObjectType.LONG" name="Tempo inicial"/>
+          <arg cronapi-raw-type="undefined" cronapi-type="ObjectType.LONG" name="Tempo para Atualização"/>
+          <arg cronapi-raw-type="undefined" cronapi-type="ObjectType.STRING" name="Unidade de Tempo"/>
+        </mutation>
+        <statement name="ARG0">
+          <block colour="#995ba5" dependencyby="Anb:u5+^,0vLkL9QIqn5" id="VK{k1hr^v^;BZXv*C4+j" origintype="procedures_callnoreturn" output="false" tooltip="Executa a função definida pelo usuário &quot;faça algo&quot;." type="procedures_callnoreturn">
+            <mutation name="faça algo" return-raw-type="undefined"/>
+          </block>
+        </statement>
+        <value name="ARG1">
+          <shadow colour="#5b67a5" dependencyby="Anb:u5+^,0vLkL9QIqn5" id="EK1}}ghaM6q/m2U?`$2!" origintype="math_number" output="true" tooltip="function () { [native code] }" type="math_number">
+            <field name="NUM">0</field>
+          </shadow>
+        </value>
+        <value name="ARG2">
+          <shadow colour="#5b67a5" dependencyby="Anb:u5+^,0vLkL9QIqn5" id=":Mu9]@OXXaw{4F,AA)X%" origintype="math_number" output="true" tooltip="function () { [native code] }" type="math_number">
+            <field name="NUM">0</field>
+          </shadow>
+        </value>
+        <value name="ARG3">
+          <block colour="#487f7f" dependencyby="Anb:u5+^,0vLkL9QIqn5" id="Uy+JA3y7^zm[=2/qjaz{" origintype="util_dropdown" output="true" type="util_dropdown">
+            <mutation>
+              <arg name="seconds" value="Segundos"/>
+              <arg name="milliseconds" value="milliSegundoss"/>
+              <arg name="minutes" value="Minutos"/>
+              <arg name="hours" value="Horas"/>
+            </mutation>
+            <field name="SELECT">seconds</field>
+          </block>
+        </value>
+      </block>
+    </statement>
+  </block>
+</blockly>

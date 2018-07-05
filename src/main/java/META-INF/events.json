@@ -1,0 +1,45 @@
+{
+	"onSystemStarts": {
+		"type": "server",
+		"blockly": {
+			"namespace": "blockly.Bloco",
+			"classNameNew": "Bloco",
+			"classNameOld": "Bloco",
+			"sourcePath": "src/main/java/blockly/Bloco.blockly",
+			"language": "java",
+			"class": "blockly.Bloco",
+			"methods": [
+				{
+					"name": "Executar",
+					"hasReturn": "true",
+					"params": []
+				},
+				{
+					"name": "faça algo",
+					"hasReturn": "false",
+					"params": []
+				},
+				{
+					"name": "assincrono",
+					"hasReturn": "false",
+					"params": []
+				}
+			]
+		},
+		"blocklyMethod": "Executar",
+		"blocklyClass": "blockly.Bloco",
+		"blocklyFunctionCall": "cronapi.util.makeCallServerBlocklyAsync('blockly.Bloco:Executar', null, null)"
+	},
+	"onLogout": null,
+	"onLogin": null,
+	"onSessionCreate": null,
+	"onSessionDestroy": null,
+	"afterPageRender": null,
+	"afterLoginRender": null,
+	"afterHomeRender": null,
+	"onAuthenticate": null,
+	"onGetRoles": null,
+	"onGetMultitenantId": null,
+	"onChangePassword": null,
+	"onChangeTheme": null
+}
