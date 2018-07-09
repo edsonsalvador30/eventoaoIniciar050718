@@ -516,7 +516,7 @@
       "class": "adjust-icon mdi mdi-filter",
       "templateURL": "src/main/webapp/plugins/cronapp-framework-js/dist/components/templates/datasourcefiltercomplex.template.html"
     },
-    {
+     {
       "name": "crn-button-filter",
       "text_pt_BR": "Botão do Filtro",
       "text_en_US": "Button of Filter",
@@ -621,6 +621,21 @@
             {
               "key": "btn-link",
               "value": "Link"
+            }
+          ]
+        },
+        {
+          "name": "required-filter",
+          "type": "options",
+          "target": "required-filter",
+          "values": [
+            {
+              "key": "true",
+              "value": "Sim"
+            },
+            {
+              "key": "false",
+              "value": "Não"
             }
           ]
         }
@@ -1667,6 +1682,32 @@
           "selector": "cron-rich-editor"
         }
       ]
+  },
+  {
+    "name": "crn-cron-grid",
+    "text_pt_BR": "Grade",
+    "text_en_US": "Grid",
+    "class": "adjust-icon mdi mdi-nutrition",
+    "designTimeHTML": "<img width='100%' src='plugins/cronapp-framework-js/dist/img/cronGrid.png'>",
+    "designTimeSelector": "cron-grid",
+    "templateURL": "src/main/webapp/plugins/cronapp-framework-js/dist/components/templates/cron-grid.template.html",
+    "properties": {
+      "options": {
+        "removable": false,
+        "global": "true"
+      },
+      "ng-model": {
+        "onSave": "javascript:function() { var result = arguments[0]; if (result.indexOf('.') == -1 && result.trim().length > 0 ) { result = 'vars.'+result;  }  return result; }",
+        "onDisplay": "javascript:function() { return arguments[0].replace('vars.',''); }"
+      }
+    },
+    "groupedChildren": [
+      {
+        "text_pt_BR": "Configuração",
+        "text_en_US": "Configuration",
+        "selector": "cron-grid"
+      }
+    ]
   }
   ]
 }

@@ -360,3 +360,317 @@ window.safeApply = function(fn) {
     this.$apply(fn);
   }
 };
+
+app.kendoHelper = {
+  getSchema: function(dataSource) {
+    var parseAttribute = [
+      { kendoType: "string", entityType: ["string", "character", "uuid", "guid"] },
+      { kendoType: "number", entityType: ["integer", "long", "double", "int", "float", "bigdecimal", "single", "int32", "int64", "decimal"] },
+      { kendoType: "date", entityType: ["date", "time", "datetime"] },
+      { kendoType: "boolean", entityType: ["boolean"] }
+    ];
+
+    var parseType = function(type) {
+      for (var i = 0; i < parseAttribute.length; i++) {
+        if (parseAttribute[i].entityType.includes(type.toLocaleLowerCase()))
+          return parseAttribute[i].kendoType;
+      }
+      return "string";
+    };
+
+    var schema = {
+      model : {
+        id : undefined,
+        fields: {}
+      }
+    };
+    if (dataSource && dataSource.schemaFields) {
+      dataSource.schemaFields.forEach(function(field) {
+        if (field.key)
+          schema.model.id = field.name;
+        schema.model.fields[field.name] = {
+          type: parseType(field.type),
+          editable: true,
+          nullable: field.nullable,
+          validation: { required: !field.nullable },
+        }
+      });
+    }
+    return schema;
+  },
+  getDataSource: function(dataSource, allowPaging, pageCount) {
+    var crudServiceBaseUrl = dataSourceMap[dataSource.id].serviceUrlODATA;
+    var schema = this.getSchema(dataSource);
+
+    var parseParameter = function(data) {
+      for (var attr in data) {
+        if (schema.model.fields.hasOwnProperty(attr)) {
+
+          var schemaField = schema.model.fields[attr];
+          if (schemaField.type == 'string' && data[attr] != undefined)
+            data[attr] = data[attr] + "";
+          else if (schemaField.type == 'number' && data[attr] != undefined)
+            data[attr] = parseFloat(data[attr]);
+          else if (schemaField.type == 'date' && data[attr] != undefined)
+            data[attr] = '/Date('+data[attr].getTime()+')/';
+
+          //Significa que é o ID
+          if (schema.model.id == attr) {
+            //Se o mesmo for vazio, remover do data
+            if (data[attr] != undefined && data[attr].toString().length == 0)
+              delete data[attr];
+          }
+        }
+      }
+      return data;
+    };
+
+    var pageSize = pageCount;
+    //Se permitir paginar, coloca quantidade default de registros, caso n tenha
+    if (allowPaging)
+      pageSize = pageCount ? pageCount : 10;
+
+
+    var datasource = {
+      type: "odata",
+      transport: {
+        read:  {
+          url: crudServiceBaseUrl,
+          dataType: "json"
+        },
+        update: {
+          url: function(data) {
+            // if (options.editable == 'batch') {
+            //   var urls = [];
+            //   data.models.forEach((m) => {
+            //     urls.push(m.__metadata.uri);
+            //   });
+            //   return urls;
+            // }
+            // else {
+
+            return data.__metadata.uri;
+
+            // }
+          },
+        },
+        create: {
+          url: crudServiceBaseUrl,
+        },
+        destroy: {
+          url: function(data) {
+            return data.__metadata.uri;
+          }
+        },
+        batch: {
+          url: crudServiceBaseUrl,
+        },
+        parameterMap: function (data, type) {
+          if (type == "read") {
+            var paramsOData = kendo.data.transports.odata.parameterMap(data, type, true);
+
+            var orderBy = '';
+            if (this.options.grid) {
+              this.options.grid.dataSource.group().forEach(function(group) {
+                orderBy += group.field +" " + group.dir + ",";
+              });
+            }
+            if (orderBy.length > 0) {
+              orderBy = orderBy.substr(0, orderBy.length-1);
+              if (paramsOData.$orderby)
+                paramsOData.$orderby =  orderBy + "," + paramsOData.$orderby;
+              else
+                paramsOData.$orderby = orderBy;
+            }
+            return paramsOData;
+          }
+          else
+            data = parseParameter(data);
+
+          return kendo.stringify(data);
+        }
+      },
+      pageSize: pageSize,
+      serverPaging: true,
+      serverFiltering: true,
+      serverSorting: true,
+      batch: false,
+      schema: schema
+    };
+    return datasource;
+  },
+  getConfigCombobox: function(options) {
+    var dataSource = {};
+    
+    var valuePrimitive = false;
+    var dataSource = {};
+    if (options && (!options.dynamic || options.dynamic=='false')) {
+      valuePrimitive = true;
+      options.dataValueField = 'key'; 
+      options.dataTextField = 'value';
+      dataSource.data = (options.staticDataSource == null ? undefined : options.staticDataSource);
+    } else if (options.dataSource) {
+      dataSource = app.kendoHelper.getDataSource(options.dataSource);
+      valuePrimitive = (options.valuePrimitive == null ? undefined : options.valuePrimitive);
+    }
+    
+    if (!options.dataValueField || options.dataValueField.trim() == '') {
+      options.dataValueField = (options.dataTextField == null ? undefined : options.dataTextField);
+    }
+    
+    var config = {
+      dataTextField: (options.dataTextField == null ? undefined : options.dataTextField),
+      dataValueField: (options.dataValueField == null ? undefined : options.dataValueField),
+      dataSource: dataSource,
+      headerTemplate: (options.headerTemplate == null ? undefined : options.headerTemplate),
+      template: (options.template == null ? undefined : options.template),
+      placeholder: (options.placeholder == null ? undefined : options.placeholder),
+      footerTemplate: (options.footerTemplate == null ? undefined : options.footerTemplate),
+      filter: (options.filter == null ? undefined : options.filter),
+      valuePrimitive : valuePrimitive,
+      suggest: true
+    };
+    
+    if (options.cascadeFrom && options.cascadeFromField) {
+      config['cascadeFrom'] = options.cascadeFrom;
+      config['cascadeFromField'] = options.cascadeFromField;
+      config['autoBind'] = false; 
+    }
+    
+    if (!valuePrimitive) {
+      config['optionLabel'] = (options.optionLabel == null ? undefined : options.optionLabel);
+    }
+
+    return config;
+  },
+  getConfigDate: function(translate, options) {
+    var config = {};
+
+    if (config) {
+      var formatCulture = function(culture) {
+        culture = culture.replace(/_/gm,'-');
+        var parts = culture.split('-');
+        parts[parts.length - 1] = parts[parts.length - 1].toUpperCase();
+        return parts.join('-');
+      }
+
+      var formatKendoMask = function(mask) {
+        mask = mask.replace(/:MM/gm,':mm');
+        mask = mask.replace(/:M/gm,':m');
+        mask = mask.replace(/S/gm,'s');
+        mask = mask.replace(/D/gm,'d');
+        mask = mask.replace(/Y/gm,'y');
+
+        return mask;
+      }
+
+      var formatMomentMask = function(type, mask) {
+        if (!mask) {
+          mask = parseMaskType(type, translate)
+        }
+        
+        return mask;
+      }
+
+      var animation = {};
+      if (options.animation) {
+        try {
+          animation = JSON.parse(options.animation);
+        } catch(err) {
+          console.log('DateAnimation invalid configuration! ' + err);
+        }
+      }
+
+      var momentFormat = formatMomentMask(options.type, options.format);
+      var format = formatKendoMask(momentFormat);
+      
+      var timeFormat = formatKendoMask("time", options.timeFormat);
+      var culture = formatCulture(translate.use());
+      
+      config = {
+        value: null,
+        format: format,
+        timeFormat: timeFormat,
+        momentFormat: momentFormat,
+        culture: culture,
+        type: (options.type == null ? undefined : options.type),
+        weekNumber: (options.weekNumber  == null ? undefined : options.weekNumber),
+        dateInput: (options.dateInput == null ? undefined : options.dateInput),
+        animation: animation,
+        footer: (options.footer == null ? undefined : options.footer),
+        start: (options.start == null ? undefined : options.start),
+        depth: (options.start == null ? undefined : options.start)
+      }
+    }
+
+    return config;
+  },
+  buildKendoMomentPicker : function($element, options, scope, ngModelCtrl) {
+    var useUTC = options.type == 'date' || options.type == 'datetime' || options.type == 'time';
+    
+    var onChange = function() {
+      var value = $element.val();
+      if (!value || value.trim() == '') {
+        if (ngModelCtrl) 
+          ngModelCtrl.$setViewValue('');
+      } else {
+        var momentDate = null;
+
+        if (useUTC) {
+          momentDate = moment.utc(value, options.momentFormat);
+        } else {
+          momentDate = moment(value, options.momentFormat);
+        }
+
+        if (ngModelCtrl && momentDate.isValid()) {
+          ngModelCtrl.$setViewValue(momentDate.toDate());
+          $element.data('changed', true);
+        }
+      }
+    }
+        
+    if (scope) {
+      options['change'] = function() {
+        scope.$apply(function () {
+          onChange();
+        });
+      };
+    } else {
+      options['change'] = onChange;
+    }
+    
+    if (options.type == 'date') {
+      return $element.kendoDatePicker(options).data('kendoDatePicker'); 
+    } else if (options.type == 'datetime' || options.type == 'datetime-local') {
+      return $element.kendoDateTimePicker(options).data('kendoDateTimePicker'); 
+    } else if (options.type == 'time' || options.type == 'time-local') {
+      return $element.kendoTimePicker(options).data('kendoTimePicker'); 
+    }
+  },
+  getConfigSlider: function(options) {
+    var config = {
+      increaseButtonTitle: options.increaseButtonTitle,
+      decreaseButtonTitle: options.decreaseButtonTitle,
+      dragHandleTitle: options.dragHandleTitle
+    }
+
+    try {
+      config['min'] = options.min ? parseInt(options.min) : 1;
+      config['max'] = options.max ? parseInt(options.max) : 1;
+      config['smallStep'] = options.smallStep ? parseInt(options.smallStep) : 1;
+      config['largeStep'] = options.largeStep ? parseInt(options.largeStep) : 1;      
+    } catch(err) {
+      console.log('Slider invalid configuration! ' + err);
+    }
+
+    return config;
+  },
+  getConfigSwitch: function(options) {
+    var config = {
+      onLabel: options.onLabel,
+      offLabel: options.offLabel
+    }
+
+    return config;
+  }
+};

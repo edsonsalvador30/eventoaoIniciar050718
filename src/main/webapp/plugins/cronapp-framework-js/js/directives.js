@@ -541,7 +541,7 @@
 
       .directive('mask', maskDirectiveMask)
 
-      .directive('cronappFilter', function() {
+      .directive('cronappFilter', function($compile) {
         return {
           restrict: 'A',
           require: '?ngModel',
@@ -702,15 +702,51 @@
               }
             }
           },
+          forceDisableDatasource: function(datasourceName, scope) {
+            var disableDatasource = setInterval(function() {
+              try {
+                var datasourceInstance = eval(datasourceName);
+                if (datasourceInstance) {
+                  $(document).ready(function() {
+                    var time = 0;
+                    var intervalForceDisable = setInterval(function() {
+                      if (time < 10) {
+                        scope.$apply(function () {
+                          datasourceInstance.enabled = false;
+                          datasourceInstance.data = [];  
+                        });
+                        time++;
+                      }
+                      else
+                        clearInterval(intervalForceDisable);
+                    }, 20);
+                  });
+                  clearInterval(disableDatasource);
+                }
+              }
+              catch(e) {
+                //try again, until render
+              }
+            },10);
+          },
           buttonBehavior: function(scope, element, attrs, ngModelCtrl, $element, typeElement, operator, autopost) {
+            var datasourceName = '';
+            if (attrs.crnDatasource)
+              datasourceName = attrs.crnDatasource;
+            else
+              datasourceName = $element.parent().attr('crn-datasource')
+            debugger;
+            var requiredFilter = attrs.requiredFilter && attrs.requiredFilter.toString() == "true";
+            if (requiredFilter) {
+              this.forceDisableDatasource(datasourceName, scope);
+              // var $datasource = $('datasource[name="'+datasourceName+'"]');
+              // $datasource.attr('enabled','false');
+              // var x = angular.element($datasource);
+              // $compile(x)(scope);
+            }
+            
             $element.on('click', function() {
               var $this = $(this);
-              var datasourceName = '';
-              if (attrs.crnDatasource)
-                datasourceName = attrs.crnDatasource;
-              else
-                datasourceName = $element.parent().attr('crn-datasource')
-
               var filters = $this.data('filters');
               if (datasourceName && datasourceName.length > 0 && filters) {
                 var bindedFilter = '';
@@ -719,7 +755,20 @@
                 });
 
                 var datasourceToFilter = eval(datasourceName);
-                datasourceToFilter.search(bindedFilter, (attrs.cronappFilterCaseinsensitive=="true"));
+                
+                if (requiredFilter) {
+                  datasourceToFilter.enabled = bindedFilter.length > 0;
+                  if (datasourceToFilter.enabled) {
+                    datasourceToFilter.search(bindedFilter, (attrs.cronappFilterCaseinsensitive=="true"));
+                  }
+                  else {
+                    scope.$apply(function () {
+                      datasourceToFilter.data = [];
+                    });
+                  }
+                }
+                else
+                  datasourceToFilter.search(bindedFilter, (attrs.cronappFilterCaseinsensitive=="true"));
               }
             });
           },
@@ -808,6 +857,387 @@
           }
         };
       })
+      .directive('cronGrid', ['$compile', '$translate', function($compile, $translate) {
+        return {
+          restrict: 'E',
+          replace: true,
+          require: 'ngModel',
+          generateId: function() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+          },
+          generateBlocklyCall: function(blocklyInfo) {
+            var call;
+            if (blocklyInfo.type == "client")  {
+              var splitedClass = blocklyInfo.blocklyClass.split('/');
+              var blocklyName = splitedClass[splitedClass.length-1];
+              call = "blockly.js.blockly." + blocklyName;
+              call += "." +  blocklyInfo.blocklyMethod;
+              var params = "()";
+              if (blocklyInfo.blocklyParams.length > 0) {
+                params = "(";
+                blocklyInfo.blocklyParams.forEach(function(p) {
+                  params += this.encodeHTML(p.value) + ",";
+                }.bind(this))
+                params = params.substr(0, params.length - 1);
+                params += ")";
+              }
+              call += params;
+            }
+            else if (blocklyInfo.type == "server") {
+              var blocklyName = blocklyInfo.blocklyClass + ':' + blocklyInfo.blocklyMethod;
+              call = "cronapi.util.makeCallServerBlocklyAsync('"+blocklyName+"',null,null,";
+              if (blocklyInfo.blocklyParams.length > 0) {
+                blocklyInfo.blocklyParams.forEach(function(p) {
+                  call += this.encodeHTML(p.value) + ",";
+                }.bind(this))
+              }
+              call = call.substr(0, call.length - 1);
+              call += ")";
+            }
+            return call;
+
+          },
+          generateToolbarButtonBlockly: function(toolbarButton, scope) {
+            var buttonBlockly;
+
+            var generateObjTemplate = function(functionToCall, title) {
+              var obj = {
+                template: function() {
+                  var buttonId = this.generateId();
+                  return compileTemplateAngular(buttonId, functionToCall, title);
+                }.bind(this)
+              };
+              return obj;
+            }.bind(this);
+
+            var compileTemplateAngular = function(buttonId, functionToCall, title) {
+              var template = '<a class="k-button" id="#BUTTONID#" href="javascript:void(0)" ng-click="#FUNCTIONCALL#">#TITLE#</a>';
+              template = template
+              .split('#BUTTONID#').join(buttonId)
+              .split('#FUNCTIONCALL#').join(functionToCall)
+              .split('#TITLE#').join(title);
+
+              var waitRender = setInterval(function() {
+                if ($('#' + buttonId).length > 0) {
+                  var x = angular.element($('#' + buttonId ));
+                  $compile(x)(scope);
+                  clearInterval(waitRender);
+                }
+              },200);
+
+              return template;
+            };
+
+            var call = this.generateBlocklyCall(toolbarButton.blocklyInfo);
+            buttonBlockly = generateObjTemplate(call, toolbarButton.title);
+            return buttonBlockly;
+          },
+          getObjectId: function(obj) {
+            if (!obj)
+              obj = "";
+            if (typeof obj === 'object') {
+              //Verifica se tem id, senão pega o primeiro campo
+              if (obj["id"])
+                obj = obj["id"];
+              else {
+                for (var key in obj) {
+                  obj = obj[key];
+                  break;
+                }
+              }
+            }
+            return obj;
+          },
+          updateFiltersFromAngular: function(grid, scope) {
+
+            grid.dataSource.options.filter.forEach(function(f) {
+              if ("screen" == f.linkParentType) {
+                scope.$watch(f.linkParentField, function(newValue, oldValue) {
+                  grid.dataSource.options.filter.forEach(function(filterToUpdate) {
+                    if ("screen" == f.linkParentType && f.linkParentField == filterToUpdate.linkParentField) {
+                      newValue = this.getObjectId(newValue);
+                      filterToUpdate.value = newValue;
+                    }
+                  }.bind(this));
+                  grid.dataSource.read();
+                  grid.refresh();
+                  grid.trigger('change');
+                }.bind(this));
+              }
+            }.bind(this));
+          },
+          setFiltersFromLinkColumns: function(datasource, options, scope) {
+            datasource.filter = [];
+            options.columns.forEach( function(c) {
+              if (c.linkParentField && c.linkParentField.length > 0 &&
+                  c.linkParentType && c.linkParentType.length > 0)
+              {
+                var filter = { field: c.field, operator: "eq", value: "", linkParentField: c.linkParentField, linkParentType: c.linkParentType };
+                if (filter.linkParentType == "screen") {
+                  var value = scope[filter.linkParentField];
+                  value = this.getObjectId(value);
+                  filter.value = value;
+                }
+                datasource.filter.push(filter);
+              }
+            }.bind(this));
+          },
+          // updateNgModel
+          encodeHTML: function(value){
+            return value.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+          },
+          decodeHTML: function(value){
+            return value.replace(/&apos;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/&gt;/g, '>')
+            .replace(/&lt;/g, '<')
+            .replace(/&amp;/g, '&');
+          },
+          getColumns: function(options, scope) {
+
+            function categoryDropDownEditor(container, options) {
+              debugger;
+              $('<input required name="' + options.field + '"/>')
+              .appendTo(container)
+              .kendoDropDownList({
+                autoBind: false,
+                dataTextField: "CategoryName",
+                dataValueField: "CategoryID",
+                dataSource: {
+                  type: "odata",
+                  transport: {
+                    read: "https://demos.telerik.com/kendo-ui/service/Northwind.svc/Categories"
+                  }
+                }
+              });
+            }
+
+
+            var columns = [];
+            if (options.columns) {
+              options.columns.forEach(function(column)  {
+                if (column.visible) {
+                  if (column.dataType == "Database") {
+
+                    var addColumn = {
+                      field: column.field,
+                      title: column.headerText,
+                      type: column.type,
+                      width: column.width,
+                      sortable: column.sortable,
+                      filterable: column.filterable,
+                      // editor: categoryDropDownEditor
+                    };
+                    if (column.format)
+                      addColumn.format = column.format;
+                    columns.push(addColumn);
+
+                  }
+                  else if (column.dataType == "Command") {
+                    //Se não for editavel, não adiciona colunas de comando
+                    if (options.editable != 'no') {
+                      var command = column.command.split('|');
+                      var addColumn = {
+                        command: command,
+                        title: column.headerText,
+                        width: column.width
+                      };
+                      columns.push(addColumn);
+                    }
+                  }
+                  else if (column.dataType == "Blockly") {
+                    var directiveContext = this;
+                    var addColumn = {
+                      command: [{
+                        name: this.generateId(),
+                        text: column.headerText,
+                        click: function(e) {
+                          debugger;
+                          e.preventDefault();
+                          var tr = $(e.target).closest("tr"); // get the current table row (tr)
+                          var grid = tr.closest('table');
+
+                          var item = this.dataItem(tr);
+                          // var index = $(grid).find('tr.'+$(tr).attr('class')).index(tr);
+                          var index = $(grid.find('tbody')[0]).children().index(tr)
+                          var consolidated = {
+                            item: item,
+                            index: index
+                          }
+                          var call = 'scope.' + directiveContext.generateBlocklyCall(column.blocklyInfo);
+                          eval(call);
+                          return;
+                        }
+                      }],
+                      width: column.width
+                    };
+                    columns.push(addColumn);
+                  }
+
+                }
+              }.bind(this));
+            }
+
+            return columns;
+          },
+          getPageAble: function(options) {
+            var pageable = {
+              refresh:  options.allowRefreshGrid,
+              pageSizes: options.allowSelectionTotalPageToShow,
+              buttonCount: 5
+            };
+
+            if (!options.allowPaging)
+              pageable = options.allowPaging;
+
+            return pageable;
+          },
+          getToolbar: function(options, scope) {
+            var toolbar = [];
+
+            options.toolBarButtons.forEach(function(toolbarButton) {
+              if (toolbarButton.type == "Native") {
+                //Se a grade for editavel, adiciona todos os commands
+                if (options.editable != 'no') {
+                  if (toolbarButton.title == "save" || toolbarButton.title == "cancel") {
+                    //O Salvar e cancelar na toolbar só é possível no batch mode
+                    if (options.editable == 'batch')
+                      toolbar.push(toolbarButton.title);
+                  }
+                  else
+                    toolbar.push(toolbarButton.title);
+                }
+                //Senão, adiciona somente commands que não sejam de crud
+                else {
+                  if (toolbarButton.title == "pdf" || toolbarButton.title == "excel") {
+                    toolbar.push(toolbarButton.title);
+                  }
+                }
+              }
+              else if (toolbarButton.type == "Blockly") {
+                var buttonBlockly = this.generateToolbarButtonBlockly(toolbarButton, scope);
+                toolbar.push(buttonBlockly);
+              }
+              else if (toolbarButton.type == "Template") {
+                var buttonTemplate =  {
+                  template: toolbarButton.template
+                }
+                toolbar.push(buttonTemplate);
+              }
+
+            }.bind(this));
+
+            if (toolbar.length == 0)
+              toolbar = undefined;
+            return toolbar;
+          },
+          getEditable: function(options) {
+
+            var editable = options.editable;
+            if (options.editable == 'batch') {
+              editable = true;
+            }
+            else if (options.editable == 'no') {
+              editable = false;
+            }
+            return editable;
+          },
+          generateKendoGridInit: function(options, scope) {
+
+            var helperDirective = this;
+            function detailInit(e) {
+              e.sender.options.listCurrentOptions.forEach(function(currentOptions) {
+                var currentKendoGridInit = helperDirective.generateKendoGridInit(currentOptions, scope);
+
+                currentKendoGridInit.dataSource.filter.forEach(function(f) {
+                  if (f.linkParentType == "hierarchy" ) {
+                    f.value = e.data[f.linkParentField];
+                  }
+                });
+
+                var grid = $("<div/>").appendTo(e.detailCell).kendoGrid(currentKendoGridInit).data('kendoGrid');
+                grid.dataSource.transport.options.grid = grid;
+                helperDirective.updateFiltersFromAngular(grid, scope);
+
+              });
+            }
+
+            var datasource = app.kendoHelper.getDataSource(options.dataSource, options.allowPaging, options.pageCount);
+            var columns = this.getColumns(options, scope);
+            var pageAble = this.getPageAble(options);
+            var toolbar = this.getToolbar(options, scope);
+            var editable = this.getEditable(options);
+            //Adiciona os campos de ligação (Filtro do datasource)
+            this.setFiltersFromLinkColumns(datasource, options, scope);
+
+            var kendoGridInit = {
+              toolbar: toolbar,
+              pdf: {
+                allPages: true,
+                avoidLinks: true,
+                paperSize: "A4",
+                margin: { top: "2cm", left: "1cm", right: "1cm", bottom: "1cm" },
+                landscape: true,
+                repeatHeaders: true,
+                scale: 0.8
+              },
+              dataSource: datasource,
+              editable: editable,
+              height: options.height,
+              groupable: options.allowGrouping,
+              sortable: options.allowSorting,
+              filterable: true,
+              pageable: pageAble,
+              columns: columns,
+              selectable: options.allowSelectionRow,
+              detailInit: (options.details && options.details.length > 0) ? detailInit : undefined,
+              listCurrentOptions: (options.details && options.details.length > 0) ? options.details : undefined
+            };
+
+            return kendoGridInit;
+
+          },
+          link: function (scope, element, attrs, ngModelCtrl) {
+            var $templateDyn = $('<div></div>');
+            var baseUrl = 'plugins/cronapp-framework-js/dist/js/kendo-ui/js/messages/kendo.messages.';
+            if ($translate.use() == 'pt_br')
+              baseUrl += "pt-BR.min.js";
+            else
+              baseUrl += "en-US.min.js";
+
+            var helperDirective = this;
+
+            $.getScript(baseUrl, function () {
+              console.log('loaded language');
+
+              var options = JSON.parse(attrs.options || "{}");
+              var kendoGridInit = helperDirective.generateKendoGridInit(options, scope);
+
+              kendoGridInit.change = function(e) {
+                var item = this.dataItem(this.select());
+                var fcChangeValue = eval('scope.cronapi.screen.changeValueOfField')
+                fcChangeValue(attrs['ngModel'], item);
+              }
+
+
+              var grid = $templateDyn.kendoGrid(kendoGridInit).data('kendoGrid');
+              grid.dataSource.transport.options.grid = grid;
+              helperDirective.updateFiltersFromAngular(grid, scope);
+
+            });
+
+            element.html($templateDyn);
+            $compile($templateDyn)(element.scope());
+
+          }
+        };
+      }])
 }(app));
 
 function maskDirectiveAsDate($compile, $translate) {

@@ -3,10 +3,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 
 import java.util.TimeZone;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
@@ -14,7 +14,7 @@ import java.util.TimeZone;
 	"cronapp.framework.authentication.normal",
 	"cronapp.framework.authentication.security",
 	"cronapp.framework.rest",
-    "cronapp.framework.scheduler",
+	"cronapp.framework.scheduler",
 	"auth.permission",
 	"api.rest.events",
 	"api.rest.webservices",
@@ -29,6 +29,7 @@ public class SpringBootMain extends SpringBootServletInitializer {
     static {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     }
+
 
 	public static void main(String[] args) {
 		SpringApplication.run(SpringBootMain.class, args);
